@@ -1,0 +1,200 @@
+@import "tailwindcss";
+
+@theme {
+  /* Custom design tokens */
+  --font-bricolage: "Bricolage Grotesque", system-ui, sans-serif;
+  
+  /* Color palette - using HSL values for compatibility */
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(222.2 84% 4.9%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222.2 84% 4.9%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222.2 84% 4.9%);
+  --color-primary: hsl(221.2 83.2% 53.3%);
+  --color-primary-foreground: hsl(210 40% 98%);
+  --color-secondary: hsl(210 40% 96%);
+  --color-secondary-foreground: hsl(222.2 84% 4.9%);
+  --color-muted: hsl(210 40% 96%);
+  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
+  --color-accent: hsl(210 40% 96%);
+  --color-accent-foreground: hsl(222.2 84% 4.9%);
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-border: hsl(214.3 31.8% 91.4%);
+  --color-input: hsl(214.3 31.8% 91.4%);
+  --color-ring: hsl(221.2 83.2% 53.3%);
+  
+  /* Dark mode colors */
+  --color-dark-background: hsl(222.2 84% 4.9%);
+  --color-dark-foreground: hsl(210 40% 98%);
+  --color-dark-card: hsl(222.2 84% 4.9%);
+  --color-dark-card-foreground: hsl(210 40% 98%);
+  --color-dark-popover: hsl(222.2 84% 4.9%);
+  --color-dark-popover-foreground: hsl(210 40% 98%);
+  --color-dark-primary: hsl(217.2 91.2% 59.8%);
+  --color-dark-primary-foreground: hsl(222.2 84% 4.9%);
+  --color-dark-secondary: hsl(217.2 32.6% 17.5%);
+  --color-dark-secondary-foreground: hsl(210 40% 98%);
+  --color-dark-muted: hsl(217.2 32.6% 17.5%);
+  --color-dark-muted-foreground: hsl(215 20.2% 65.1%);
+  --color-dark-accent: hsl(217.2 32.6% 17.5%);
+  --color-dark-accent-foreground: hsl(210 40% 98%);
+  --color-dark-destructive: hsl(0 62.8% 30.6%);
+  --color-dark-destructive-foreground: hsl(210 40% 98%);
+  --color-dark-border: hsl(217.2 32.6% 17.5%);
+  --color-dark-input: hsl(217.2 32.6% 17.5%);
+  --color-dark-ring: hsl(224.3 76.3% 94.1%);
+  
+  /* Border radius */
+  --radius: 0.5rem;
+}
+
+@layer base {
+  :root {
+    /* Light mode variables */
+    --background: var(--color-background);
+    --foreground: var(--color-foreground);
+    --card: var(--color-card);
+    --card-foreground: var(--color-card-foreground);
+    --popover: var(--color-popover);
+    --popover-foreground: var(--color-popover-foreground);
+    --primary: var(--color-primary);
+    --primary-foreground: var(--color-primary-foreground);
+    --secondary: var(--color-secondary);
+    --secondary-foreground: var(--color-secondary-foreground);
+    --muted: var(--color-muted);
+    --muted-foreground: var(--color-muted-foreground);
+    --accent: var(--color-accent);
+    --accent-foreground: var(--color-accent-foreground);
+    --destructive: var(--color-destructive);
+    --destructive-foreground: var(--color-destructive-foreground);
+    --border: var(--color-border);
+    --input: var(--color-input);
+    --ring: var(--color-ring);
+  }
+
+  @variant dark {
+    :root {
+      /* Dark mode variables */
+      --background: var(--color-dark-background);
+      --foreground: var(--color-dark-foreground);
+      --card: var(--color-dark-card);
+      --card-foreground: var(--color-dark-card-foreground);
+      --popover: var(--color-dark-popover);
+      --popover-foreground: var(--color-dark-popover-foreground);
+      --primary: var(--color-dark-primary);
+      --primary-foreground: var(--color-dark-primary-foreground);
+      --secondary: var(--color-dark-secondary);
+      --secondary-foreground: var(--color-dark-secondary-foreground);
+      --muted: var(--color-dark-muted);
+      --muted-foreground: var(--color-dark-muted-foreground);
+      --accent: var(--color-dark-accent);
+      --accent-foreground: var(--color-dark-accent-foreground);
+      --destructive: var(--color-dark-destructive);
+      --destructive-foreground: var(--color-dark-destructive-foreground);
+      --border: var(--color-dark-border);
+      --input: var(--color-dark-input);
+      --ring: var(--color-dark-ring);
+    }
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+  
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-bricolage);
+  }
+}
+
+@layer components {
+  .card {
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    border-radius: calc(var(--radius) - 2px);
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  }
+  
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    border-radius: calc(var(--radius) - 2px);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+  
+  .btn:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+  
+  .btn:disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  
+  .btn-primary {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+  
+  .btn-primary:hover {
+    background-color: hsl(var(--primary) / 0.9);
+  }
+  
+  .btn-secondary {
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+  }
+  
+  .btn-secondary:hover {
+    background-color: hsl(var(--secondary) / 0.8);
+  }
+}
+
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}
+
+@utility scrollbar-hidden {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@utility content-auto {
+  content-visibility: auto;
+}
