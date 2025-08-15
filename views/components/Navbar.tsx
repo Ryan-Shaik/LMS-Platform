@@ -37,6 +37,12 @@ export default async function Navbar() {
                 >
                   Sessions
                 </Link>
+                <Link
+                  href={ROUTES.PRICING}
+                  className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium"
+                >
+                  Pricing
+                </Link>
               </div>
             )}
           </div>

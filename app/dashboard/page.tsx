@@ -7,8 +7,11 @@ import { Plus, BookOpen, Clock, TrendingUp } from "lucide-react";
 import { createOrUpdateUser } from "@/controllers/UserController";
 import { getUserCompanions, getCompanionStats } from "@/controllers/CompanionController";
 import { getUserSessions, getUserSessionStats } from "@/controllers/SessionController";
+import { getUserTier, getUserUsageStats, getUserSubscription } from "@/controllers/SubscriptionController";
 import CompanionCard from "@/views/components/CompanionCard";
 import SessionCard from "@/views/components/SessionCard";
+import UsageStats from "@/views/components/UsageStats";
+import SubscriptionManagement from "@/views/components/SubscriptionManagement";
 import { ROUTES } from "@/lib/constants";
 
 export default async function DashboardPage() {
@@ -26,18 +29,24 @@ export default async function DashboardPage() {
     userCompanionsResult,
     recentSessionsResult,
     sessionStatsResult,
-    companionStatsResult
+    companionStatsResult,
+    tierResult,
+    usageResult
   ] = await Promise.all([
     getUserCompanions(6),
     getUserSessions(6),
     getUserSessionStats(),
-    getCompanionStats()
+    getCompanionStats(),
+    getUserTier(),
+    getUserUsageStats()
   ]);
 
   const userCompanions = userCompanionsResult.data || [];
   const recentSessions = recentSessionsResult.data || [];
   const sessionStats = sessionStatsResult.data || { totalSessions: 0, totalDuration: 0, averageRating: 0 };
   const companionStats = companionStatsResult.data || { totalCompanions: 0, userCompanions: 0 };
+  const currentTier = tierResult.data;
+  const usage = usageResult.data;
 
   return (
     <div className="space-y-8">
@@ -111,6 +120,21 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Usage Stats */}
+      {currentTier && usage && (
+        <section>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Usage & Subscription</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <UsageStats usage={usage} tier={currentTier} />
+            </div>
+            <div>
+              <SubscriptionManagement tier={currentTier} />
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* My Companions */}
       <section>

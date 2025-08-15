@@ -1,6 +1,6 @@
-# LMS Platform - Sprint 1
+# LMS Platform - Sprint 2
 
-A Learning Management System built with Next.js following MVC architecture, featuring AI-powered tutors and personalized learning experiences.
+A Learning Management System built with Next.js following MVC architecture, featuring AI-powered tutors, personalized learning experiences, and subscription-based monetization.
 
 ## Sprint 1 Features ✅
 
@@ -10,12 +10,21 @@ A Learning Management System built with Next.js following MVC architecture, feat
 - **Session History**: Track completed learning sessions
 - **Personal Companions**: Create and manage your own AI tutors
 
-### AI-Powered Learning (NEW)
+### AI-Powered Learning
 - **Vapi Integration**: Voice-powered AI conversations
 - **Custom AI Tutors**: Create personalized AI companions with specific teaching styles
 - **Interactive Learning Sessions**: Real-time voice conversations with AI tutors
 - **Session Management**: Start, manage, and complete learning sessions
 - **Progress Tracking**: Monitor learning progress with detailed analytics
+
+## Sprint 2 Features ✅ (NEW)
+
+### Subscription & Monetization
+- **Tiered Plans**: Multiple subscription levels (Free, Basic, Pro, Enterprise)
+- **Usage Limits**: Free tier with 3 companions & 10 sessions/month, paid tiers with higher limits
+- **Upgrade Prompts**: Seamless upgrade flow when limits are reached
+- **Usage Analytics**: Real-time tracking of companion and session usage
+- **Subscription Management**: View current plan, usage stats, and upgrade options
 
 ## Tech Stack
 
@@ -149,6 +158,24 @@ CREATE TABLE session_history (
   "completedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   feedback TEXT,
   rating INTEGER CHECK (rating >= 1 AND rating <= 5)
+);
+```
+
+### User Subscriptions Table
+```sql
+CREATE TABLE user_subscriptions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  "userId" UUID REFERENCES users(id) ON DELETE CASCADE,
+  "planId" TEXT NOT NULL,
+  tier TEXT NOT NULL CHECK (tier IN ('free', 'basic', 'pro', 'enterprise')),
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'cancelled', 'past_due', 'trialing')),
+  "currentPeriodStart" TIMESTAMP WITH TIME ZONE NOT NULL,
+  "currentPeriodEnd" TIMESTAMP WITH TIME ZONE NOT NULL,
+  "cancelAtPeriodEnd" BOOLEAN DEFAULT false,
+  "stripeCustomerId" TEXT,
+  "stripeSubscriptionId" TEXT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ```
 

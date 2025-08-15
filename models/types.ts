@@ -159,3 +159,55 @@ export interface CreateLearningSessionData {
   companionId: string;
   userId: string;
 }
+
+// Subscription Types
+export enum SubscriptionTier {
+  FREE = "free",
+  BASIC = "basic",
+  PRO = "pro",
+  ENTERPRISE = "enterprise"
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  tier: SubscriptionTier;
+  price: number;
+  interval: 'month' | 'year';
+  companionLimit: number;
+  sessionLimit: number; // per month
+  features: string[];
+  isPopular?: boolean;
+  clerkPlanId?: string | null; // Clerk subscription plan ID
+}
+
+export interface UserSubscription {
+  id: string;
+  userId: string;
+  planId: string;
+  tier: SubscriptionTier;
+  status: 'active' | 'cancelled' | 'past_due' | 'trialing';
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  cancelAtPeriodEnd: boolean;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface UsageStats {
+  companionsUsed: number;
+  companionLimit: number;
+  sessionsUsed: number;
+  sessionLimit: number;
+  canCreateCompanion: boolean;
+  canStartSession: boolean;
+}
+
+export interface UpgradePromptData {
+  currentTier: SubscriptionTier;
+  requiredTier: SubscriptionTier;
+  feature: string;
+  message: string;
+}

@@ -6,6 +6,7 @@ import { UserModel } from "@/models/User";
 import { Companion, CreateCompanionData, GetCompanionsQuery, ApiResponse } from "@/models/types";
 import { vapiService } from "@/lib/vapi";
 import { createVapiAssistant } from "./VapiController";
+import { checkCompanionLimit } from "./SubscriptionController";
 
 const companionModel = new CompanionModel();
 const userModel = new UserModel();
@@ -32,13 +33,20 @@ export async function createCompanion(companionData: CreateCompanionData): Promi
 
     console.log("Database user found:", dbUser.id, dbUser.email);
 
-    // Check companion creation limits (basic implementation)
-    const companionCount = await companionModel.getCompanionCount(dbUser.id);
-    console.log("Current companion count:", companionCount);
+    // Check companion creation limits based on subscription
+    const limitCheck = await checkCompanionLimit();
     
-    // For now, set a basic limit of 10 companions per user
-    if (companionCount >= 10) {
-      return { success: false, error: "Companion limit reached. Upgrade your plan to create more companions." };
+    if (!limitCheck.success) {
+      return { success: false, error: limitCheck.error || "Failed to check companion limit" };
+    }
+
+    if (!limitCheck.data?.canCreate) {
+      const upgradePrompt = limitCheck.data?.upgradePrompt;
+      return { 
+        success: false, 
+        error: upgradePrompt?.message || "Companion limit reached. Please upgrade your plan.",
+        data: upgradePrompt
+      };
     }
 
     // Generate instructions for the AI assistant
