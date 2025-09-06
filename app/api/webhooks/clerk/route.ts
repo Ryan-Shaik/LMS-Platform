@@ -191,28 +191,9 @@ async function handleSubscriptionCreated(subscriptionData: any) {
       stripeSubscriptionId: subscriptionData.id,
     });
 
-    // Update Clerk user metadata to ensure immediate tier detection
-    try {
-      const { clerkClient } = await import("@clerk/nextjs/server");
-      const client = await clerkClient();
-      await client.users.updateUserMetadata(userId, {
-        publicMetadata: {
-          subscription: {
-            planId: planId,
-            status: subscriptionData.status || "active",
-            tier: plan.tier,
-            currentPeriodStart: subscriptionData.current_period_start * 1000,
-            currentPeriodEnd: subscriptionData.current_period_end * 1000,
-            cancelAtPeriodEnd: subscriptionData.cancel_at_period_end || false,
-          }
-        }
-      });
-      console.log("Clerk metadata updated successfully");
-    } catch (clerkError) {
-      console.error("Failed to update Clerk metadata:", clerkError);
-      // Don't throw here - subscription is still created in database
-      console.log("Continuing without Clerk metadata update");
-    }
+    // Note: Clerk metadata updates are handled by Clerk's webhook system
+    // The subscription data is already updated in our database
+    console.log("Subscription data created in database successfully");
 
     console.log("Subscription created successfully for user:", userId);
   } catch (error) {
@@ -326,33 +307,10 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
       });
     }
 
-    // Update Clerk user metadata to ensure immediate tier detection
-    console.log("Updating Clerk user metadata...");
-    try {
-      const { clerkClient } = await import("@clerk/nextjs/server");
-      const client = await clerkClient();
-
-      console.log("Clerk client initialized, updating metadata for user:", userId);
-
-      const updateResult = await client.users.updateUserMetadata(userId, {
-        publicMetadata: {
-          subscription: {
-            planId: planId,
-            status: subscriptionData.status || "active",
-            tier: plan.tier,
-            currentPeriodStart: subscriptionData.current_period_start * 1000,
-            currentPeriodEnd: subscriptionData.current_period_end * 1000,
-            cancelAtPeriodEnd: subscriptionData.cancel_at_period_end || false,
-          }
-        }
-      });
-
-      console.log("Clerk metadata update result:", updateResult);
-    } catch (clerkError) {
-      console.error("Failed to update Clerk metadata:", clerkError);
-      // Don't throw here - subscription is still updated in database
-      console.log("Continuing without Clerk metadata update");
-    }
+    // Note: Clerk metadata updates are handled by Clerk's webhook system
+    // The subscription data is already updated in our database
+    // Clerk will handle updating user metadata on their end
+    console.log("Subscription data updated in database successfully");
 
     console.log("Subscription updated successfully for user:", userId);
   } catch (error) {
