@@ -259,12 +259,17 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
       console.log("Received plan ID from Clerk:", planId);
 
       // Create a fallback plan for unknown plan IDs
-      if (planId.includes('basic') || planId.includes('core')) {
+      // Clerk plan IDs can be in various formats, so we use pattern matching
+      if (planId.includes('basic') || planId.includes('core') || planId.includes('cplan') || planId.includes('learner')) {
         plan = SUBSCRIPTION_PLANS.find(p => p.id === 'core-learner');
-        console.log("Using fallback plan: core-learner");
+        console.log("Using fallback plan: core-learner for plan ID:", planId);
       } else if (planId.includes('pro')) {
         plan = SUBSCRIPTION_PLANS.find(p => p.id === 'pro');
-        console.log("Using fallback plan: pro");
+        console.log("Using fallback plan: pro for plan ID:", planId);
+      } else {
+        // Default to basic plan for any unknown plan
+        plan = SUBSCRIPTION_PLANS.find(p => p.id === 'basic');
+        console.log("Using default fallback plan: basic for plan ID:", planId);
       }
     }
 
