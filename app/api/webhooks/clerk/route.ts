@@ -228,8 +228,10 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
       throw new Error("User ID not found in subscription data");
     }
 
-    // Extract plan ID from the first active item
-    const activeItem = subscriptionData.items?.find((item: any) => item.status === 'active');
+    // Extract plan ID from the first active or upcoming item
+    const activeItem = subscriptionData.items?.find((item: any) =>
+      item.status === 'active' || item.status === 'upcoming'
+    );
     let planId = activeItem?.plan_id;
 
     console.log("Active item found:", activeItem ? "Yes" : "No");
@@ -346,13 +348,29 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
     } else {
       // Create new subscription if it doesn't exist
       console.log("Creating new subscription for user:", dbUser.id);
+      // Safely parse dates from Clerk timestamps
+      const parseDate = (timestamp: number | undefined): Date => {
+        if (!timestamp || timestamp < 0) {
+          // Use current date if timestamp is invalid
+          return new Date();
+        }
+        // Clerk timestamps are in milliseconds, convert to Date
+        const date = new Date(timestamp);
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+          console.warn("Invalid timestamp:", timestamp, "using current date");
+          return new Date();
+        }
+        return date;
+      };
+
       await subscriptionModel.createUserSubscription({
         userId: dbUser.id,
         planId: plan.id,
         tier: plan.tier,
         status: subscriptionData.status || "active",
-        currentPeriodStart: new Date(subscriptionData.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscriptionData.current_period_end * 1000),
+        currentPeriodStart: parseDate(subscriptionData.current_period_start),
+        currentPeriodEnd: parseDate(subscriptionData.current_period_end),
         cancelAtPeriodEnd: subscriptionData.cancel_at_period_end || false,
         stripeCustomerId: subscriptionData.customer,
         stripeSubscriptionId: subscriptionData.id,
