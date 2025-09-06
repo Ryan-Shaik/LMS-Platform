@@ -92,7 +92,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Error handling webhook:", error);
+    console.error("=== WEBHOOK ERROR ===");
+    console.error("Error type:", error instanceof Error ? error.constructor.name : typeof error);
+    console.error("Error message:", error instanceof Error ? error.message : String(error));
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+    console.error("====================");
+
     return new Response(`Error processing webhook: ${error instanceof Error ? error.message : String(error)}`, { status: 500 });
   }
 }
@@ -268,20 +273,30 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
 
     // Update Clerk user metadata to ensure immediate tier detection
     console.log("Updating Clerk user metadata...");
-    const { clerkClient } = await import("@clerk/nextjs/server");
-    const client = await clerkClient();
-    await client.users.updateUserMetadata(userId, {
-      publicMetadata: {
-        subscription: {
-          planId: planId,
-          status: subscriptionData.status || "active",
-          tier: plan.tier,
-          currentPeriodStart: subscriptionData.current_period_start * 1000,
-          currentPeriodEnd: subscriptionData.current_period_end * 1000,
-          cancelAtPeriodEnd: subscriptionData.cancel_at_period_end || false,
+    try {
+      const { clerkClient } = await import("@clerk/nextjs/server");
+      const client = await clerkClient();
+
+      console.log("Clerk client initialized, updating metadata for user:", userId);
+
+      const updateResult = await client.users.updateUserMetadata(userId, {
+        publicMetadata: {
+          subscription: {
+            planId: planId,
+            status: subscriptionData.status || "active",
+            tier: plan.tier,
+            currentPeriodStart: subscriptionData.current_period_start * 1000,
+            currentPeriodEnd: subscriptionData.current_period_end * 1000,
+            cancelAtPeriodEnd: subscriptionData.cancel_at_period_end || false,
+          }
         }
-      }
-    });
+      });
+
+      console.log("Clerk metadata update result:", updateResult);
+    } catch (clerkError) {
+      console.error("Failed to update Clerk metadata:", clerkError);
+      throw new Error(`Clerk metadata update failed: ${clerkError instanceof Error ? clerkError.message : String(clerkError)}`);
+    }
 
     console.log("Subscription updated successfully for user:", userId);
   } catch (error) {
