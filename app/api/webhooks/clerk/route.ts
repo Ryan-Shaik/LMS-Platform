@@ -261,12 +261,14 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
 
     // Find the plan that matches the Clerk plan ID
     let plan = SUBSCRIPTION_PLANS.find(p => p.clerkPlanId === planId);
+    console.log("Initial plan lookup result:", plan ? `Found ${plan.id}` : "Not found");
 
     // Fallback: try to match by plan name or ID
     if (!plan) {
       console.log("Exact plan match not found, trying fallback for:", planId);
       // Try to match by plan ID directly
       plan = SUBSCRIPTION_PLANS.find(p => p.id === planId);
+      console.log("Direct ID match result:", plan ? `Found ${plan.id}` : "Not found");
     }
 
     if (!plan) {
@@ -276,6 +278,13 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
 
       // Create a fallback plan for unknown plan IDs
       // Clerk plan IDs can be in various formats, so we use pattern matching
+      console.log("Checking pattern matches:");
+      console.log("- includes 'basic':", planId.includes('basic'));
+      console.log("- includes 'core':", planId.includes('core'));
+      console.log("- includes 'cplan':", planId.includes('cplan'));
+      console.log("- includes 'learner':", planId.includes('learner'));
+      console.log("- includes 'pro':", planId.includes('pro'));
+
       if (planId.includes('basic') || planId.includes('core') || planId.includes('cplan') || planId.includes('learner')) {
         plan = SUBSCRIPTION_PLANS.find(p => p.id === 'core-learner');
         console.log("Using fallback plan: core-learner for plan ID:", planId);
@@ -287,6 +296,8 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
         plan = SUBSCRIPTION_PLANS.find(p => p.id === 'basic');
         console.log("Using default fallback plan: basic for plan ID:", planId);
       }
+
+      console.log("Final fallback result:", plan ? `Found ${plan.id}` : "Still not found");
     }
 
     if (!plan) {
