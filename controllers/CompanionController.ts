@@ -42,10 +42,9 @@ export async function createCompanion(companionData: CreateCompanionData): Promi
 
     if (!limitCheck.data?.canCreate) {
       const upgradePrompt = limitCheck.data?.upgradePrompt;
-      return { 
-        success: false, 
-        error: upgradePrompt?.message || "Companion limit reached. Please upgrade your plan.",
-        data: upgradePrompt
+      return {
+        success: false,
+        error: upgradePrompt?.message || "Companion limit reached. Please upgrade your plan."
       };
     }
 

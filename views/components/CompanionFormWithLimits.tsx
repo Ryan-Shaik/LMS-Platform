@@ -22,14 +22,8 @@ export default function CompanionFormWithLimits() {
       if (result.success) {
         router.push("/companions");
       } else {
-        // Check if this is a limit error with upgrade prompt
-        if (result.data && typeof result.data === 'object' && 'currentTier' in result.data) {
-          setUpgradeData(result.data as UpgradePromptData);
-          setShowUpgradePrompt(true);
-        } else {
-          // Handle other errors
-          alert(result.error || "Failed to create companion");
-        }
+        // Handle error - for now just show the error message
+        alert(result.error || "Failed to create companion");
       }
     } catch (error) {
       console.error("Error creating companion:", error);
@@ -41,11 +35,8 @@ export default function CompanionFormWithLimits() {
 
   return (
     <>
-      <CompanionForm 
-        onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-      />
-      
+      <CompanionForm />
+
       {upgradeData && (
         <UpgradePrompt
           isOpen={showUpgradePrompt}

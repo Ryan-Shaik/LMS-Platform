@@ -21,7 +21,7 @@ const companionSchema = z.object({
   style: z.string().min(1, "Style is required"),
   duration: z.number().min(5, "Minimum 5 minutes").max(120, "Maximum 120 minutes"),
   instructions: z.string().optional(),
-  isPublic: z.boolean().default(false),
+  isPublic: z.boolean().optional(),
 });
 
 type CompanionFormData = z.infer<typeof companionSchema>;
