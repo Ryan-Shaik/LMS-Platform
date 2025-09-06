@@ -229,8 +229,12 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
     }
 
     // Extract plan ID from the first active item
-    const activeItem = subscriptionData.items?.find((item: any) => item.status === 'active' || item.status === 'upcoming');
+    const activeItem = subscriptionData.items?.find((item: any) => item.status === 'active');
     let planId = activeItem?.plan_id;
+
+    console.log("Active item found:", activeItem ? "Yes" : "No");
+    console.log("Active item plan_id:", planId);
+    console.log("Active item plan details:", activeItem?.plan);
 
     // If no active item, try the first item with a plan
     if (!planId && subscriptionData.items?.length > 0) {
