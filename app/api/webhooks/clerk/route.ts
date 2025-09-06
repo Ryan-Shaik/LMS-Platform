@@ -179,13 +179,29 @@ async function handleSubscriptionCreated(subscriptionData: any) {
     }
 
     // Create subscription in our database
+    // Safely parse dates from Clerk timestamps
+    const parseDate = (timestamp: number | undefined): Date => {
+      if (!timestamp || timestamp < 0) {
+        // Use current date if timestamp is invalid
+        return new Date();
+      }
+      // Clerk timestamps are in milliseconds, convert to Date
+      const date = new Date(timestamp);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn("Invalid timestamp:", timestamp, "using current date");
+        return new Date();
+      }
+      return date;
+    };
+
     await subscriptionModel.createUserSubscription({
       userId: dbUser.id,
       planId: plan.id,
       tier: plan.tier,
       status: subscriptionData.status || "active",
-      currentPeriodStart: new Date(subscriptionData.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscriptionData.current_period_end * 1000),
+      currentPeriodStart: parseDate(subscriptionData.current_period_start),
+      currentPeriodEnd: parseDate(subscriptionData.current_period_end),
       cancelAtPeriodEnd: subscriptionData.cancel_at_period_end || false,
       stripeCustomerId: subscriptionData.customer,
       stripeSubscriptionId: subscriptionData.id,
@@ -286,12 +302,28 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
     if (existingSubscription) {
       // Update existing subscription
       console.log("Updating existing subscription:", existingSubscription.id);
+      // Safely parse dates from Clerk timestamps
+      const parseDate = (timestamp: number | undefined): Date => {
+        if (!timestamp || timestamp < 0) {
+          // Use current date if timestamp is invalid
+          return new Date();
+        }
+        // Clerk timestamps are in milliseconds, convert to Date
+        const date = new Date(timestamp);
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+          console.warn("Invalid timestamp:", timestamp, "using current date");
+          return new Date();
+        }
+        return date;
+      };
+
       await subscriptionModel.updateUserSubscription(existingSubscription.id, {
         planId: plan.id,
         tier: plan.tier,
         status: subscriptionData.status || "active",
-        currentPeriodStart: new Date(subscriptionData.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscriptionData.current_period_end * 1000),
+        currentPeriodStart: parseDate(subscriptionData.current_period_start),
+        currentPeriodEnd: parseDate(subscriptionData.current_period_end),
         cancelAtPeriodEnd: subscriptionData.cancel_at_period_end || false,
         stripeCustomerId: subscriptionData.customer,
         stripeSubscriptionId: subscriptionData.id,
