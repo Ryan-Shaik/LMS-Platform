@@ -7,8 +7,12 @@ const isProtectedRoute = createRouteMatcher([
   '/sessions(.*)',
 ]);
 
+const isWebhookRoute = createRouteMatcher([
+  '/api/webhooks/(.*)',
+]);
+
 export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) await auth.protect();
+  if (isProtectedRoute(req) && !isWebhookRoute(req)) await auth.protect();
 });
 
 export const config = {

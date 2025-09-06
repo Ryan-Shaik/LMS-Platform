@@ -192,20 +192,27 @@ async function handleSubscriptionCreated(subscriptionData: any) {
     });
 
     // Update Clerk user metadata to ensure immediate tier detection
-    const { clerkClient } = await import("@clerk/nextjs/server");
-    const client = await clerkClient();
-    await client.users.updateUserMetadata(userId, {
-      publicMetadata: {
-        subscription: {
-          planId: planId,
-          status: subscriptionData.status || "active",
-          tier: plan.tier,
-          currentPeriodStart: subscriptionData.current_period_start * 1000,
-          currentPeriodEnd: subscriptionData.current_period_end * 1000,
-          cancelAtPeriodEnd: subscriptionData.cancel_at_period_end || false,
+    try {
+      const { clerkClient } = await import("@clerk/nextjs/server");
+      const client = await clerkClient();
+      await client.users.updateUserMetadata(userId, {
+        publicMetadata: {
+          subscription: {
+            planId: planId,
+            status: subscriptionData.status || "active",
+            tier: plan.tier,
+            currentPeriodStart: subscriptionData.current_period_start * 1000,
+            currentPeriodEnd: subscriptionData.current_period_end * 1000,
+            cancelAtPeriodEnd: subscriptionData.cancel_at_period_end || false,
+          }
         }
-      }
-    });
+      });
+      console.log("Clerk metadata updated successfully");
+    } catch (clerkError) {
+      console.error("Failed to update Clerk metadata:", clerkError);
+      // Don't throw here - subscription is still created in database
+      console.log("Continuing without Clerk metadata update");
+    }
 
     console.log("Subscription created successfully for user:", userId);
   } catch (error) {
@@ -343,7 +350,8 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
       console.log("Clerk metadata update result:", updateResult);
     } catch (clerkError) {
       console.error("Failed to update Clerk metadata:", clerkError);
-      throw new Error(`Clerk metadata update failed: ${clerkError instanceof Error ? clerkError.message : String(clerkError)}`);
+      // Don't throw here - subscription is still updated in database
+      console.log("Continuing without Clerk metadata update");
     }
 
     console.log("Subscription updated successfully for user:", userId);
