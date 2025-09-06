@@ -17,7 +17,7 @@ const userModel = new UserModel();
 
 export async function POST(req: NextRequest) {
   // Get the headers
-  const headerPayload = headers();
+  const headerPayload = await headers();
   const svix_id = headerPayload.get("svix-id");
   const svix_timestamp = headerPayload.get("svix-timestamp");
   const svix_signature = headerPayload.get("svix-signature");
@@ -34,9 +34,9 @@ export async function POST(req: NextRequest) {
   const body = JSON.stringify(payload);
 
   // Create a new Svix instance with your secret.
-  const wh = new Webhook(webhookSecret);
+  const wh = new Webhook(webhookSecret!);
 
-  let evt: WebhookEvent;
+  let evt: any;
 
   // Verify the payload with the headers
   try {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       "svix-id": svix_id,
       "svix-timestamp": svix_timestamp,
       "svix-signature": svix_signature,
-    }) as WebhookEvent;
+    });
   } catch (err) {
     console.error("Error verifying webhook:", err);
     return new Response("Error occurred", {
@@ -149,6 +149,22 @@ async function handleSubscriptionCreated(subscriptionData: any) {
       stripeSubscriptionId: subscriptionData.id,
     });
 
+    // Update Clerk user metadata to ensure immediate tier detection
+    const { clerkClient } = await import("@clerk/nextjs/server");
+    const client = await clerkClient();
+    await client.users.updateUserMetadata(userId, {
+      publicMetadata: {
+        subscription: {
+          planId: planId,
+          status: subscriptionData.status || "active",
+          tier: plan.tier,
+          currentPeriodStart: subscriptionData.current_period_start * 1000,
+          currentPeriodEnd: subscriptionData.current_period_end * 1000,
+          cancelAtPeriodEnd: subscriptionData.cancel_at_period_end || false,
+        }
+      }
+    });
+
     console.log("Subscription created successfully for user:", userId);
   } catch (error) {
     console.error("Error handling subscription created webhook:", error);
@@ -205,6 +221,22 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
         stripeSubscriptionId: subscriptionData.id,
       });
     }
+
+    // Update Clerk user metadata to ensure immediate tier detection
+    const { clerkClient } = await import("@clerk/nextjs/server");
+    const client = await clerkClient();
+    await client.users.updateUserMetadata(userId, {
+      publicMetadata: {
+        subscription: {
+          planId: planId,
+          status: subscriptionData.status || "active",
+          tier: plan.tier,
+          currentPeriodStart: subscriptionData.current_period_start * 1000,
+          currentPeriodEnd: subscriptionData.current_period_end * 1000,
+          cancelAtPeriodEnd: subscriptionData.cancel_at_period_end || false,
+        }
+      }
+    });
 
     console.log("Subscription updated successfully for user:", userId);
   } catch (error) {

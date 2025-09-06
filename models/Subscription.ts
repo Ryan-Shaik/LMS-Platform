@@ -200,7 +200,7 @@ export class SubscriptionModel {
       case SubscriptionTier.FREE:
         return 3;
       case SubscriptionTier.BASIC:
-        return 15;
+        return 25; // Unified limit for BASIC tier (includes core_learner)
       case SubscriptionTier.PRO:
       case SubscriptionTier.ENTERPRISE:
         return -1; // unlimited
@@ -214,7 +214,7 @@ export class SubscriptionModel {
       case SubscriptionTier.FREE:
         return 10;
       case SubscriptionTier.BASIC:
-        return 100;
+        return 250; // Unified limit for BASIC tier (includes core_learner)
       case SubscriptionTier.PRO:
       case SubscriptionTier.ENTERPRISE:
         return -1; // unlimited

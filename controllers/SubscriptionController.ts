@@ -48,29 +48,41 @@ export async function getUserTier(): Promise<ApiResponse<SubscriptionTier>> {
       return { success: false, error: "User not authenticated" };
     }
 
-    // Check Clerk user metadata for subscription info
+    const dbUser = await userModel.getUserByClerkId(user.id);
+    
+    if (!dbUser) {
+      return { success: true, data: SubscriptionTier.FREE };
+    }
+
+    // Primary: Check database subscription (most reliable)
+    const tier = await subscriptionModel.getUserTier(dbUser.id);
+    
+    // If database shows active subscription, return it
+    if (tier !== SubscriptionTier.FREE) {
+      return { success: true, data: tier };
+    }
+
+    // Secondary: Check Clerk user metadata for subscription info
     const subscription = user.publicMetadata?.subscription as any;
     
     if (subscription && subscription.status === 'active') {
-      // Map Clerk plan IDs to our tiers
-      switch (subscription.planId) {
-        case 'basic':
-          return { success: true, data: SubscriptionTier.BASIC };
-        case 'core_learner':
-          return { success: true, data: SubscriptionTier.BASIC }; // Core Learner maps to BASIC tier
-        case 'pro':
-          return { success: true, data: SubscriptionTier.PRO };
-        default:
-          return { success: true, data: SubscriptionTier.FREE };
+      // Check if subscription period is still valid
+      const currentTime = Date.now();
+      const periodEnd = subscription.currentPeriodEnd;
+      
+      if (periodEnd && currentTime < periodEnd) {
+        // Map Clerk plan IDs to our tiers
+        switch (subscription.planId) {
+          case 'basic':
+            return { success: true, data: SubscriptionTier.BASIC };
+          case 'core_learner':
+            return { success: true, data: SubscriptionTier.BASIC }; // Core Learner maps to BASIC tier
+          case 'pro':
+            return { success: true, data: SubscriptionTier.PRO };
+          default:
+            return { success: true, data: SubscriptionTier.FREE };
+        }
       }
-    }
-
-    // Fallback to database check
-    const dbUser = await userModel.getUserByClerkId(user.id);
-    
-    if (dbUser) {
-      const tier = await subscriptionModel.getUserTier(dbUser.id);
-      return { success: true, data: tier };
     }
     
     return { success: true, data: SubscriptionTier.FREE };
@@ -165,7 +177,7 @@ function getCompanionLimitForTier(tier: SubscriptionTier): number {
     case SubscriptionTier.FREE:
       return 3;
     case SubscriptionTier.BASIC:
-      return 25; // Core Learner gets 25
+      return 25; // Unified limit for BASIC tier (includes core_learner)
     case SubscriptionTier.PRO:
       return -1; // unlimited
     case SubscriptionTier.ENTERPRISE:
@@ -180,7 +192,7 @@ function getSessionLimitForTier(tier: SubscriptionTier): number {
     case SubscriptionTier.FREE:
       return 10;
     case SubscriptionTier.BASIC:
-      return 250; // Core Learner gets 250
+      return 250; // Unified limit for BASIC tier (includes core_learner)
     case SubscriptionTier.PRO:
       return -1; // unlimited
     case SubscriptionTier.ENTERPRISE:
@@ -486,6 +498,45 @@ export async function syncSubscriptionFromClerk(): Promise<ApiResponse<UserSubsc
   } catch (error) {
     console.error("Error syncing subscription from Clerk:", error);
     return { success: false, error: "Failed to sync subscription" };
+  }
+}
+
+export async function refreshSubscriptionData(): Promise<ApiResponse<{ tier: SubscriptionTier; synced: boolean }>> {
+  try {
+    const user = await currentUser();
+    
+    if (!user) {
+      return { success: false, error: "User not authenticated" };
+    }
+
+    const dbUser = await userModel.getUserByClerkId(user.id);
+    
+    if (!dbUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Force sync from Clerk
+    const syncResult = await syncSubscriptionFromClerk();
+    
+    if (!syncResult.success) {
+      console.error("Failed to sync subscription from Clerk:", syncResult.error);
+    }
+
+    // Get the updated tier
+    const tierResult = await getUserTier();
+    const tier = tierResult.data || SubscriptionTier.FREE;
+
+    return {
+      success: true,
+      data: {
+        tier,
+        synced: syncResult.success
+      },
+      message: "Subscription data refreshed successfully"
+    };
+  } catch (error) {
+    console.error("Error refreshing subscription data:", error);
+    return { success: false, error: "Failed to refresh subscription data" };
   }
 }
 

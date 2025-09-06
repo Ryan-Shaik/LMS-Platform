@@ -1,16 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  CreditCard, 
+import {
+  CreditCard,
   ExternalLink,
-  Crown
+  Crown,
+  RefreshCw
 } from "lucide-react";
 import { SubscriptionTier } from "@/models/types";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface SubscriptionManagementProps {
   tier: SubscriptionTier;
@@ -33,9 +36,31 @@ const getTierColor = (tier: SubscriptionTier) => {
 
 export default function SubscriptionManagement({ tier }: SubscriptionManagementProps) {
   const { user } = useUser();
+  const router = useRouter();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Get subscription info from Clerk user metadata
   const subscription = user?.publicMetadata?.subscription as any;
+
+  const handleRefreshSubscription = async () => {
+    setIsRefreshing(true);
+    try {
+      const response = await fetch('/api/subscription/refresh', {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        // Refresh the page to show updated data
+        router.refresh();
+      } else {
+        console.error('Failed to refresh subscription');
+      }
+    } catch (error) {
+      console.error('Error refreshing subscription:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   return (
     <Card>
@@ -88,6 +113,18 @@ export default function SubscriptionManagement({ tier }: SubscriptionManagementP
               </Button>
             </Link>
           )}
+          
+          {/* Refresh Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshSubscription}
+            disabled={isRefreshing}
+            className="w-full"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh Status'}
+          </Button>
         </div>
 
         {/* Note */}
