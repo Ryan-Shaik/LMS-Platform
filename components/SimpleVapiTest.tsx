@@ -38,16 +38,16 @@ const SimpleVapiTest = () => {
         firstMessageMode: "assistant-speaks-first" as const,
         transcriber: {
           provider: "deepgram" as const,
-          model: "nova-2",
-          language: "en-US",
+          model: "nova-2" as const,
+          language: "en-US" as const,
         },
         voice: {
           provider: "11labs" as const,
-          voiceId: "sarah",
+          voiceId: "sarah" as const,
         },
         model: {
           provider: "openai" as const,
-          model: "gpt-4o-mini",
+          model: "gpt-4o-mini" as const,
           messages: [
             {
               role: "system" as const,

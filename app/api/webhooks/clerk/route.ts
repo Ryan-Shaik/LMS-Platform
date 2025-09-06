@@ -9,13 +9,21 @@ import { SUBSCRIPTION_PLANS } from "@/lib/subscription-plans";
 const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
 
 if (!webhookSecret) {
-  throw new Error("Please add CLERK_WEBHOOK_SECRET to your environment variables");
+  console.warn("CLERK_WEBHOOK_SECRET not found - webhook endpoint will be disabled");
 }
 
 const subscriptionModel = new SubscriptionModel();
 const userModel = new UserModel();
 
 export async function POST(req: NextRequest) {
+  // Check if webhook secret is configured
+  if (!webhookSecret) {
+    console.log("Webhook endpoint called but CLERK_WEBHOOK_SECRET not configured");
+    return NextResponse.json({
+      error: "Webhook not configured - please set CLERK_WEBHOOK_SECRET environment variable"
+    }, { status: 501 });
+  }
+
   // Get the headers
   const headerPayload = await headers();
   const svix_id = headerPayload.get("svix-id");
@@ -34,7 +42,7 @@ export async function POST(req: NextRequest) {
   const body = JSON.stringify(payload);
 
   // Create a new Svix instance with your secret.
-  const wh = new Webhook(webhookSecret!);
+  const wh = new Webhook(webhookSecret);
 
   let evt: any;
 
