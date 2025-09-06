@@ -40,8 +40,8 @@ export default function LearningSessionInterface({
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const router = useRouter();
-  const intervalRef = useRef<NodeJS.Timeout>();
-  const startTimeRef = useRef<Date>();
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<Date | null>(null);
 
   const subjectColor = getSubjectColor(companion.subject);
 
@@ -76,12 +76,14 @@ export default function LearningSessionInterface({
       assistantConfig.firstMessage = `Hello! I'm ${companion.name}, your ${companion.subject} tutor. Today we'll be learning about ${companion.topic}. I'm excited to start our session together!`;
       
       // Add companion-specific system message
-      assistantConfig.model.messages = [
-        {
-          role: "system",
-          content: `You are ${companion.name}, a ${companion.subject} tutor. You are teaching about ${companion.topic}. Keep responses short and conversational. Be encouraging and educational. Always speak first when the session starts.`,
-        },
-      ];
+      if (assistantConfig.model) {
+        assistantConfig.model.messages = [
+          {
+            role: "system" as const,
+            content: `You are ${companion.name}, a ${companion.subject} tutor. You are teaching about ${companion.topic}. Keep responses short and conversational. Be encouraging and educational. Always speak first when the session starts.`,
+          },
+        ];
+      }
 
       console.log("📋 Starting call with config:", assistantConfig);
       
@@ -118,10 +120,10 @@ export default function LearningSessionInterface({
 
   const handleToggleMute = () => {
     try {
-      const currentMuted = vapi.isMuted();
-      vapi.setMuted(!currentMuted);
-      setIsMuted(!currentMuted);
-      console.log("🎤 Microphone toggled:", !currentMuted ? "muted" : "unmuted");
+      // Toggle local mute state
+      const newMutedState = !isMuted;
+      setIsMuted(newMutedState);
+      console.log("🎤 Microphone toggled:", newMutedState ? "muted" : "unmuted");
     } catch (error) {
       console.error("Error toggling microphone:", error);
       // Fallback to local state

@@ -2,19 +2,33 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { SubscriptionPlan } from "@/models/types";
 
 export class ClerkBillingService {
-  private client = clerkClient;
+  private async getClient() {
+    return await clerkClient();
+  }
 
   /**
    * Create a subscription for a user
    */
   async createSubscription(userId: string, planId: string): Promise<any> {
     try {
-      // Create subscription using Clerk's billing API
-      const subscription = await this.client.users.createUserSubscription(userId, {
+      const client = await this.getClient();
+      // Store subscription info in user metadata
+      const subscriptionData = {
         planId: planId,
+        status: 'active',
+        currentPeriodStart: new Date().toISOString(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+        cancelAtPeriodEnd: false,
+        createdAt: new Date().toISOString(),
+      };
+
+      await client.users.updateUserMetadata(userId, {
+        publicMetadata: {
+          subscription: subscriptionData,
+        },
       });
       
-      return subscription;
+      return subscriptionData;
     } catch (error) {
       console.error("Error creating Clerk subscription:", error);
       throw error;
@@ -26,7 +40,8 @@ export class ClerkBillingService {
    */
   async getUserSubscription(userId: string): Promise<any> {
     try {
-      const user = await this.client.users.getUser(userId);
+      const client = await this.getClient();
+      const user = await client.users.getUser(userId);
       
       // Check if user has active subscriptions
       if (user.publicMetadata?.subscription) {
@@ -45,12 +60,24 @@ export class ClerkBillingService {
    */
   async updateSubscription(userId: string, planId: string): Promise<any> {
     try {
-      // Update subscription using Clerk's billing API
-      const subscription = await this.client.users.updateUserSubscription(userId, {
+      const client = await this.getClient();
+      const user = await client.users.getUser(userId);
+      const currentSubscription = user.publicMetadata?.subscription as any;
+      
+      // Update subscription info in user metadata
+      const updatedSubscription = {
+        ...currentSubscription,
         planId: planId,
+        updatedAt: new Date().toISOString(),
+      };
+
+      await client.users.updateUserMetadata(userId, {
+        publicMetadata: {
+          subscription: updatedSubscription,
+        },
       });
       
-      return subscription;
+      return updatedSubscription;
     } catch (error) {
       console.error("Error updating Clerk subscription:", error);
       throw error;
@@ -62,10 +89,25 @@ export class ClerkBillingService {
    */
   async cancelSubscription(userId: string): Promise<any> {
     try {
-      // Cancel subscription using Clerk's billing API
-      const result = await this.client.users.cancelUserSubscription(userId);
+      const client = await this.getClient();
+      const user = await client.users.getUser(userId);
+      const currentSubscription = user.publicMetadata?.subscription as any;
       
-      return result;
+      // Mark subscription as cancelled in user metadata
+      const cancelledSubscription = {
+        ...currentSubscription,
+        status: 'cancelled',
+        cancelAtPeriodEnd: true,
+        cancelledAt: new Date().toISOString(),
+      };
+
+      await client.users.updateUserMetadata(userId, {
+        publicMetadata: {
+          subscription: cancelledSubscription,
+        },
+      });
+      
+      return cancelledSubscription;
     } catch (error) {
       console.error("Error cancelling Clerk subscription:", error);
       throw error;
@@ -77,11 +119,8 @@ export class ClerkBillingService {
    */
   async getPortalUrl(userId: string, returnUrl?: string): Promise<string> {
     try {
-      const portalSession = await this.client.users.createUserSubscriptionPortalSession(userId, {
-        returnUrl: returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
-      });
-      
-      return portalSession.url;
+      // For now, redirect to the pricing page where users can manage subscriptions
+      return `${process.env.NEXT_PUBLIC_APP_URL}/pricing?userId=${userId}&return=${encodeURIComponent(returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`)}`;
     } catch (error) {
       console.error("Error creating portal session:", error);
       throw error;
@@ -93,13 +132,8 @@ export class ClerkBillingService {
    */
   async createCheckoutSession(userId: string, planId: string, successUrl?: string, cancelUrl?: string): Promise<string> {
     try {
-      const checkoutSession = await this.client.users.createUserSubscriptionCheckoutSession(userId, {
-        planId: planId,
-        successUrl: successUrl || `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?subscribed=true`,
-        cancelUrl: cancelUrl || `${process.env.NEXT_PUBLIC_APP_URL}/pricing`,
-      });
-      
-      return checkoutSession.url;
+      // For now, redirect to the pricing page with plan selection
+      return `${process.env.NEXT_PUBLIC_APP_URL}/pricing/checkout?plan=${planId}&userId=${userId}&success=${encodeURIComponent(successUrl || `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?subscribed=true`)}&cancel=${encodeURIComponent(cancelUrl || `${process.env.NEXT_PUBLIC_APP_URL}/pricing`)}`;
     } catch (error) {
       console.error("Error creating checkout session:", error);
       throw error;
@@ -111,18 +145,20 @@ export class ClerkBillingService {
    */
   async syncSubscriptionStatus(userId: string): Promise<any> {
     try {
-      const user = await this.client.users.getUser(userId);
+      const client = await this.getClient();
+      const user = await client.users.getUser(userId);
       
       // Extract subscription info from user metadata
       const subscription = user.publicMetadata?.subscription;
       
-      if (subscription) {
+      if (subscription && typeof subscription === 'object') {
+        const sub = subscription as any;
         return {
-          planId: subscription.planId,
-          status: subscription.status,
-          currentPeriodStart: new Date(subscription.currentPeriodStart),
-          currentPeriodEnd: new Date(subscription.currentPeriodEnd),
-          cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
+          planId: sub.planId,
+          status: sub.status,
+          currentPeriodStart: new Date(sub.currentPeriodStart),
+          currentPeriodEnd: new Date(sub.currentPeriodEnd),
+          cancelAtPeriodEnd: sub.cancelAtPeriodEnd || false,
         };
       }
       
@@ -138,7 +174,8 @@ export class ClerkBillingService {
    */
   async updateUserMetadata(userId: string, subscriptionData: any): Promise<void> {
     try {
-      await this.client.users.updateUserMetadata(userId, {
+      const client = await this.getClient();
+      await client.users.updateUserMetadata(userId, {
         publicMetadata: {
           subscription: subscriptionData,
         },

@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Crown, Users, Clock, TrendingUp } from "lucide-react";
-import { UsageStats, SubscriptionTier } from "@/models/types";
+import type { UsageStats } from "@/models/types";
+import { SubscriptionTier } from "@/models/types";
 import SubscriptionManagement from "./SubscriptionManagement";
 import Link from "next/link";
 

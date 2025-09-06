@@ -25,14 +25,14 @@ export const configureAssistant = (voice: string, style: string) => {
   const vapiAssistant: CreateAssistantDTO = {
     name: "AI Tutor",
     firstMessage: "Hello! I'm your AI tutor. I'm excited to start our learning session together. Let's begin!",
-    firstMessageMode: "assistant-speaks-first",
+    firstMessageMode: "assistant-speaks-first" as const,
     transcriber: {
-      provider: "deepgram",
-      model: "nova-2",
-      language: "en-US",
+      provider: "deepgram" as const,
+      model: "nova-2" as const,
+      language: "en-US" as const,
     },
     voice: {
-      provider: "11labs",
+      provider: "11labs" as const,
       voiceId: voiceId,
       stability: 0.5,
       similarityBoost: 0.75,
@@ -40,20 +40,17 @@ export const configureAssistant = (voice: string, style: string) => {
       useSpeakerBoost: true,
     },
     model: {
-      provider: "openai",
-      model: "gpt-4o-mini",
+      provider: "openai" as const,
+      model: "gpt-4o-mini" as const,
       messages: [
         {
-          role: "system",
+          role: "system" as const,
           content: "You are a helpful AI tutor. Keep your responses short and conversational. Always be encouraging and speak naturally. Start the conversation immediately when the session begins.",
         },
       ],
       temperature: 0.7,
       maxTokens: 150,
     },
-    // Ensure proper message handling
-    clientMessages: ["transcript", "hang", "speech-update"],
-    serverMessages: ["end-of-call-report", "status-update"],
   };
   
   console.log("Assistant configuration created:", vapiAssistant);
