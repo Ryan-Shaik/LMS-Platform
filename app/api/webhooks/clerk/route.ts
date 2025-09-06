@@ -135,10 +135,34 @@ async function handleUserUpdated(userData: any) {
 
 async function handleSubscriptionCreated(subscriptionData: any) {
   console.log("Subscription created:", subscriptionData);
-  
+
   try {
-    const userId = subscriptionData.user_id;
-    const planId = subscriptionData.plan_id;
+    // Extract user ID from Clerk's payload structure
+    const userId = subscriptionData.payer?.user_id;
+    if (!userId) {
+      console.error("No user_id found in subscription data. Available fields:", Object.keys(subscriptionData));
+      throw new Error("User ID not found in subscription data");
+    }
+
+    // Extract plan ID from the first active item
+    const activeItem = subscriptionData.items?.find((item: any) => item.status === 'active' || item.status === 'upcoming');
+    let planId = activeItem?.plan_id;
+
+    // If no active item, try the first item with a plan
+    if (!planId && subscriptionData.items?.length > 0) {
+      const firstItem = subscriptionData.items[0];
+      planId = firstItem.plan_id || firstItem.plan?.id;
+    }
+
+    if (!planId) {
+      console.error("No plan found in subscription items");
+      console.log("Available items:", subscriptionData.items?.map((item: any) => ({
+        status: item.status,
+        plan_id: item.plan_id,
+        plan: item.plan?.id
+      })));
+      throw new Error("Plan ID not found in subscription data");
+    }
     
     // Find our local user
     const dbUser = await userModel.getUserByClerkId(userId);
@@ -193,8 +217,32 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
   console.log("Subscription updated:", subscriptionData);
 
   try {
-    const userId = subscriptionData.user_id;
-    const planId = subscriptionData.plan_id;
+    // Extract user ID from Clerk's payload structure
+    const userId = subscriptionData.payer?.user_id;
+    if (!userId) {
+      console.error("No user_id found in subscription data. Available fields:", Object.keys(subscriptionData));
+      throw new Error("User ID not found in subscription data");
+    }
+
+    // Extract plan ID from the first active item
+    const activeItem = subscriptionData.items?.find((item: any) => item.status === 'active' || item.status === 'upcoming');
+    let planId = activeItem?.plan_id;
+
+    // If no active item, try the first item with a plan
+    if (!planId && subscriptionData.items?.length > 0) {
+      const firstItem = subscriptionData.items[0];
+      planId = firstItem.plan_id || firstItem.plan?.id;
+    }
+
+    if (!planId) {
+      console.error("No plan found in subscription items");
+      console.log("Available items:", subscriptionData.items?.map((item: any) => ({
+        status: item.status,
+        plan_id: item.plan_id,
+        plan: item.plan?.id
+      })));
+      throw new Error("Plan ID not found in subscription data");
+    }
 
     console.log("Processing subscription update for user:", userId, "plan:", planId);
 
