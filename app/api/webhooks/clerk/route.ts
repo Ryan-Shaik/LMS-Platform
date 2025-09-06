@@ -16,13 +16,18 @@ const subscriptionModel = new SubscriptionModel();
 const userModel = new UserModel();
 
 export async function POST(req: NextRequest) {
+  console.log("=== WEBHOOK RECEIVED ===");
+  console.log("Timestamp:", new Date().toISOString());
+
   // Check if webhook secret is configured
   if (!webhookSecret) {
-    console.log("Webhook endpoint called but CLERK_WEBHOOK_SECRET not configured");
+    console.log("❌ CLERK_WEBHOOK_SECRET not configured");
     return NextResponse.json({
       error: "Webhook not configured - please set CLERK_WEBHOOK_SECRET environment variable"
     }, { status: 501 });
   }
+
+  console.log("✅ Webhook secret configured");
 
   // Get the headers
   const headerPayload = await headers();
@@ -88,7 +93,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("Error handling webhook:", error);
-    return new Response("Error processing webhook", { status: 500 });
+    return new Response(`Error processing webhook: ${error instanceof Error ? error.message : String(error)}`, { status: 500 });
   }
 }
 
@@ -181,30 +186,60 @@ async function handleSubscriptionCreated(subscriptionData: any) {
 
 async function handleSubscriptionUpdated(subscriptionData: any) {
   console.log("Subscription updated:", subscriptionData);
-  
+
   try {
     const userId = subscriptionData.user_id;
     const planId = subscriptionData.plan_id;
-    
+
+    console.log("Processing subscription update for user:", userId, "plan:", planId);
+
     // Find our local user
     const dbUser = await userModel.getUserByClerkId(userId);
     if (!dbUser) {
-      console.error("User not found for subscription update:", userId);
-      return;
+      console.error("User not found in database for subscription update:", userId);
+      throw new Error(`User ${userId} not found in database`);
     }
 
+    console.log("Found database user:", dbUser.id, dbUser.email);
+
     // Find the plan that matches the Clerk plan ID
-    const plan = SUBSCRIPTION_PLANS.find(p => p.clerkPlanId === planId);
+    let plan = SUBSCRIPTION_PLANS.find(p => p.clerkPlanId === planId);
+
+    // Fallback: try to match by plan name or ID
+    if (!plan) {
+      console.log("Exact plan match not found, trying fallback for:", planId);
+      // Try to match by plan ID directly
+      plan = SUBSCRIPTION_PLANS.find(p => p.id === planId);
+    }
+
     if (!plan) {
       console.error("No local plan found for Clerk plan ID:", planId);
-      return;
+      console.log("Available plans:", SUBSCRIPTION_PLANS.map(p => ({ id: p.id, clerkPlanId: p.clerkPlanId })));
+      console.log("Received plan ID from Clerk:", planId);
+
+      // Create a fallback plan for unknown plan IDs
+      if (planId.includes('basic') || planId.includes('core')) {
+        plan = SUBSCRIPTION_PLANS.find(p => p.id === 'core-learner');
+        console.log("Using fallback plan: core-learner");
+      } else if (planId.includes('pro')) {
+        plan = SUBSCRIPTION_PLANS.find(p => p.id === 'pro');
+        console.log("Using fallback plan: pro");
+      }
     }
+
+    if (!plan) {
+      throw new Error(`Plan ${planId} not found in local plans and no fallback available`);
+    }
+
+    console.log("Found matching plan:", plan.id, plan.tier);
 
     // Find existing subscription
     const existingSubscription = await subscriptionModel.getUserSubscription(dbUser.id);
-    
+    console.log("Existing subscription:", existingSubscription ? "found" : "not found");
+
     if (existingSubscription) {
       // Update existing subscription
+      console.log("Updating existing subscription:", existingSubscription.id);
       await subscriptionModel.updateUserSubscription(existingSubscription.id, {
         planId: plan.id,
         tier: plan.tier,
@@ -217,6 +252,7 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
       });
     } else {
       // Create new subscription if it doesn't exist
+      console.log("Creating new subscription for user:", dbUser.id);
       await subscriptionModel.createUserSubscription({
         userId: dbUser.id,
         planId: plan.id,
@@ -231,6 +267,7 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
     }
 
     // Update Clerk user metadata to ensure immediate tier detection
+    console.log("Updating Clerk user metadata...");
     const { clerkClient } = await import("@clerk/nextjs/server");
     const client = await clerkClient();
     await client.users.updateUserMetadata(userId, {
@@ -249,6 +286,7 @@ async function handleSubscriptionUpdated(subscriptionData: any) {
     console.log("Subscription updated successfully for user:", userId);
   } catch (error) {
     console.error("Error handling subscription updated webhook:", error);
+    throw error; // Re-throw to trigger webhook failure
   }
 }
 

@@ -1,0 +1,32 @@
+import { NextResponse } from "next/server";
+import { UserModel } from "@/models/User";
+import { SUBSCRIPTION_PLANS } from "@/lib/subscription-plans";
+
+export async function GET() {
+  try {
+    const userModel = new UserModel();
+
+    // Test database connection
+    const testUser = await userModel.getUserByClerkId("test");
+    console.log("Database connection test:", testUser === null ? "OK" : "Unexpected result");
+
+    // Check webhook secret
+    const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
+    const hasWebhookSecret = !!webhookSecret;
+
+    return NextResponse.json({
+      status: "OK",
+      database: "connected",
+      webhookSecret: hasWebhookSecret ? "configured" : "missing",
+      plans: SUBSCRIPTION_PLANS.map(p => ({ id: p.id, clerkPlanId: p.clerkPlanId })),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("Webhook test failed:", error);
+    return NextResponse.json({
+      status: "ERROR",
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString()
+    }, { status: 500 });
+  }
+}
